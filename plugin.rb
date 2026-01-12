@@ -102,18 +102,26 @@ after_initialize do
         year = params[:year]
         return render json: { makes: [] } if year.blank?
         
-        data = DiscourseVehiclePlugin.vcdb_data
-        return render json: { makes: [], error: "VCDB not loaded" } if data.empty?
-        
-        make_ids = data.dig("year_makes", year.to_s) || []
-        makes_map = data["makes"] || {}
-        
-        makes = make_ids.map { |id| 
-          make_name = makes_map[id.to_s] || makes_map[id.to_i.to_s]
-          { id: id.to_s, name: make_name } if make_name.present?
-        }.compact.sort_by { |m| m[:name] }
-        
-        render json: { makes: makes }
+        begin
+          data = DiscourseVehiclePlugin.vcdb_data
+          return render json: { makes: [], error: "VCDB not loaded" } if data.empty? || !data.is_a?(Hash)
+          
+          make_ids = data.dig("year_makes", year.to_s) || []
+          makes_map = data["makes"] || {}
+          
+          return render json: { makes: [] } unless make_ids.is_a?(Array)
+          
+          makes = make_ids.map { |id| 
+            make_name = makes_map[id.to_s] || makes_map[id.to_i.to_s]
+            { id: id.to_s, name: make_name } if make_name.present?
+          }.compact.sort_by { |m| m[:name] }
+          
+          render json: { makes: makes }
+        rescue => e
+          Rails.logger.error("[VehiclePlugin] Error in makes endpoint: #{e.message}")
+          Rails.logger.error("[VehiclePlugin] Backtrace: #{e.backtrace.first(3).join(', ')}")
+          render json: { makes: [], error: "Internal error" }, status: 500
+        end
       end
 
       def models
@@ -121,19 +129,26 @@ after_initialize do
         make_id = params[:make_id]
         return render json: { models: [] } if year.blank? || make_id.blank?
         
-        data = DiscourseVehiclePlugin.vcdb_data
-        return render json: { models: [], error: "VCDB not loaded" } if data.empty?
-        
-        key = "#{year}_#{make_id}"
-        model_ids = data.dig("year_make_models", key) || []
-        models_map = data["models"] || {}
-        
-        models = model_ids.map { |id| 
-          model_name = models_map[id.to_s] || models_map[id.to_i.to_s]
-          { id: id.to_s, name: model_name } if model_name.present?
-        }.compact.sort_by { |m| m[:name] }
-        
-        render json: { models: models }
+        begin
+          data = DiscourseVehiclePlugin.vcdb_data
+          return render json: { models: [], error: "VCDB not loaded" } if data.empty? || !data.is_a?(Hash)
+          
+          key = "#{year}_#{make_id}"
+          model_ids = data.dig("year_make_models", key) || []
+          models_map = data["models"] || {}
+          
+          return render json: { models: [] } unless model_ids.is_a?(Array)
+          
+          models = model_ids.map { |id| 
+            model_name = models_map[id.to_s] || models_map[id.to_i.to_s]
+            { id: id.to_s, name: model_name } if model_name.present?
+          }.compact.sort_by { |m| m[:name] }
+          
+          render json: { models: models }
+        rescue => e
+          Rails.logger.error("[VehiclePlugin] Error in models endpoint: #{e.message}")
+          render json: { models: [], error: "Internal error" }, status: 500
+        end
       end
 
       def trims
@@ -142,19 +157,26 @@ after_initialize do
         model_id = params[:model_id]
         return render json: { trims: [] } if year.blank? || make_id.blank? || model_id.blank?
         
-        data = DiscourseVehiclePlugin.vcdb_data
-        return render json: { trims: [], error: "VCDB not loaded" } if data.empty?
-        
-        key = "#{year}_#{make_id}_#{model_id}"
-        trim_ids = data.dig("ymm_submodels", key) || []
-        trims_map = data["submodels"] || {}
-        
-        trims = trim_ids.map { |id| 
-          trim_name = trims_map[id.to_s] || trims_map[id.to_i.to_s]
-          { id: id.to_s, name: trim_name } if trim_name.present?
-        }.compact.sort_by { |t| t[:name] }
-        
-        render json: { trims: trims }
+        begin
+          data = DiscourseVehiclePlugin.vcdb_data
+          return render json: { trims: [], error: "VCDB not loaded" } if data.empty? || !data.is_a?(Hash)
+          
+          key = "#{year}_#{make_id}_#{model_id}"
+          trim_ids = data.dig("ymm_submodels", key) || []
+          trims_map = data["submodels"] || {}
+          
+          return render json: { trims: [] } unless trim_ids.is_a?(Array)
+          
+          trims = trim_ids.map { |id| 
+            trim_name = trims_map[id.to_s] || trims_map[id.to_i.to_s]
+            { id: id.to_s, name: trim_name } if trim_name.present?
+          }.compact.sort_by { |t| t[:name] }
+          
+          render json: { trims: trims }
+        rescue => e
+          Rails.logger.error("[VehiclePlugin] Error in trims endpoint: #{e.message}")
+          render json: { trims: [], error: "Internal error" }, status: 500
+        end
       end
 
       def engines
