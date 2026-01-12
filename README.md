@@ -1,161 +1,122 @@
 # Discourse Vehicle Plugin
 
-A Discourse plugin that adds vehicle information fields (Year, Make, Model, Engine) to topics, with cascading dropdowns, Redis caching, and automatic updates from NHTSA.
+A Discourse plugin that adds vehicle information fields (Year, Make, Model, Trim, Engine) to topics using ACES VCDB data.
 
 ## Features
 
-- **Cascading Dropdowns**: Year -> Make -> Model -> Engine selection
-- **General Question Toggle**: Users can skip vehicle info for non-vehicle questions
-- **Redis Caching**: Vehicle data stored in Discourse's Redis for fast access
-- **NHTSA Integration**: Automatic monthly updates from the National Highway Traffic Safety Administration API
-- **SSO Ready**: Pre-populate vehicle fields from user SSO claims
-- **Admin Controls**: Manual refresh and cache management
+- **Vehicle Fields**: Year, Make, Model, Trim, and Engine dropdowns in topic composer
+- **ACES VCDB Integration**: Uses official ACES Vehicle Configuration Database
+- **Cascading Dropdowns**: Year → Make → Model → Trim selection
+- **SSO Integration**: Pre-populates fields from user's vehicle data
+- **API Endpoints**: RESTful API for fetching vehicle data
+- **Persistent Storage**: Vehicle data stored with topics
 
 ## Installation
 
-### Method 1: Git Clone (Recommended)
+See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 
-Add to your `app.yml`:
-
-```yaml
-hooks:
-  after_code:
-    - exec:
-        cd: $home/plugins
-        cmd:
-          - git clone https://github.com/kaushikmahida/discourse-vehicle-plugin.git
-```
-
-Then rebuild:
+### Quick Install from GitHub
 
 ```bash
-cd /var/discourse
-./launcher rebuild app
+cd /var/discourse/shared/standalone/plugins
+sudo git clone https://github.com/kaushikmahida/discourse-vehicle-plugin.git discourse-vehicle-plugin
+cd discourse-vehicle-plugin
+sudo chown -R root:root .
 ```
 
-### Method 2: Manual Copy
+Then copy your VCDB data file and rebuild Discourse.
 
-Copy the plugin folder to `/var/discourse/plugins/` and rebuild.
+## Requirements
 
-## Configuration
+- Discourse 2.7.0 or higher
+- ACES VCDB data file (processed JSON format)
+- Ruby 3.3+
 
-### Admin Settings
+## VCDB Data
 
-Navigate to **Admin > Settings > Plugins** and search for "vehicle":
+The plugin requires a processed VCDB JSON file. Use the included `scripts/process_vcdb.py` to convert raw ACES VCDB files into the required format.
 
-| Setting | Description | Default |
-|---------|-------------|---------|
-| `vehicle_fields_enabled` | Enable vehicle fields | true |
-| `vehicle_fields_required_categories` | Categories where vehicle info is required | (empty) |
-| `vehicle_fields_auto_update_enabled` | Enable monthly NHTSA updates | true |
-| `vehicle_fields_show_on_topic_list` | Show vehicle badge on topics | true |
+**Note:** The `vcdb.json` file is NOT included in the repository. You must provide your own.
 
-### SSO Integration
+## Testing
 
-When configuring SSO, you can pass vehicle data as custom fields:
+Run the local test script:
 
-| Field | Description |
-|-------|-------------|
-| `vehicle_year` | Vehicle year (e.g., "2020") |
-| `vehicle_make` | Vehicle make (e.g., "Toyota") |
-| `vehicle_model` | Vehicle model (e.g., "Camry") |
-| `vehicle_engine` | Engine type (e.g., "2.5L") |
-| `vehicle_vin` | VIN (for future VIN decode) |
-
-Example SSO payload:
+```bash
+./test_local.sh
 ```
-custom.vehicle_year=2020
-custom.vehicle_make=Toyota
-custom.vehicle_model=Camry
-custom.vehicle_engine=2.5L
-```
+
+This verifies:
+- Plugin loads correctly
+- VCDB data loads
+- API endpoints work
+- Plugin is recognized by Discourse
 
 ## API Endpoints
 
-### Public Endpoints
+- `GET /vehicle-api/years` - Get all available years
+- `GET /vehicle-api/makes?year=2024` - Get makes for a year
+- `GET /vehicle-api/models?year=2024&make_id=123` - Get models for year/make
+- `GET /vehicle-api/trims?year=2024&make_id=123&model_id=456` - Get trims for year/make/model
+- `GET /vehicle-api/engines` - Get available engines
+- `GET /vehicle-api/test` - Test VCDB loading status
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /vehicle-api/makes` | Get all vehicle makes |
-| `GET /vehicle-api/models?make=Toyota&year=2020` | Get models for make/year |
-| `GET /vehicle-api/engines` | Get engine types |
-| `GET /vehicle-api/status` | Get cache status |
+## Deployment
 
-### Admin Endpoints
+### From GitHub (Recommended)
 
-| Endpoint | Description |
-|----------|-------------|
-| `POST /admin/plugins/vehicle/refresh` | Trigger data refresh |
-| `POST /admin/plugins/vehicle/clear-cache` | Clear Redis cache |
-| `GET /admin/plugins/vehicle/status` | Get detailed status |
+```bash
+./deploy_from_github.sh [server_ip] [branch]
+```
 
-## Redis Keys
+### Manual Deployment
 
-The plugin uses the following Redis keys:
+```bash
+./deploy.sh [server_ip]
+```
 
-| Key | Description | TTL |
-|-----|-------------|-----|
-| `vehicle_plugin:makes` | All vehicle makes | 30 days |
-| `vehicle_plugin:models:{make}:{year}` | Models for make/year | 30 days |
-| `vehicle_plugin:last_update` | Last refresh timestamp | Never |
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
-## NHTSA Data Source
+## Configuration
 
-Vehicle data is fetched from the NHTSA Vehicle Product Information Catalog (vPIC):
-- API: https://vpic.nhtsa.dot.gov/api/
-- Free, no API key required
-- Updated monthly via scheduled job
+The plugin is enabled by default. Configure via Discourse Admin:
+
+1. Go to **Admin > Settings > Plugins**
+2. Find "Vehicle Fields"
+3. Adjust settings as needed
+
+## File Structure
+
+```
+discourse-vehicle-plugin/
+├── plugin.rb                          # Main plugin file
+├── assets/
+│   ├── javascripts/                   # Frontend JavaScript
+│   └── stylesheets/                   # CSS styles
+├── config/
+│   ├── locales/                       # Translations
+│   └── settings.yml                    # Plugin settings
+├── data/
+│   └── vcdb.json                      # VCDB data (not in repo)
+├── scripts/
+│   └── process_vcdb.py                # VCDB processing script
+├── deploy_from_github.sh              # GitHub deployment script
+├── test_local.sh                      # Local testing script
+└── README.md                          # This file
+```
 
 ## Development
 
-### Local Testing
-
-```bash
-# Clone Discourse
-git clone https://github.com/discourse/discourse.git
-cd discourse
-
-# Link plugin
-ln -s /path/to/discourse-vehicle-plugin plugins/
-
-# Start development environment
-./d/boot_dev --init
-```
-
-### Manual Data Refresh
-
-From Rails console:
-```ruby
-DiscourseVehiclePlugin::VehicleDataService.refresh_all_data
-```
-
-Check cache status:
-```ruby
-DiscourseVehiclePlugin::VehicleDataService.last_update_time
-DiscourseVehiclePlugin::VehicleDataService.get_makes.count
-```
-
-Clear cache:
-```ruby
-DiscourseVehiclePlugin::VehicleDataService.clear_cache
-```
-
-## Changelog
-
-### v3.0.0
-- Added Redis caching for vehicle data
-- Added NHTSA API integration
-- Added monthly auto-update job
-- Added admin controls for cache management
-
-### v2.0.0
-- Added cascading dropdowns
-- Added general question toggle
-- Added SSO integration
-
-### v1.0.0
-- Initial release with basic vehicle fields
+1. Clone the repository
+2. Copy your `vcdb.json` to `data/`
+3. Link plugin to Discourse dev environment
+4. Run `./test_local.sh` to verify
 
 ## License
 
-MIT License - RepairSolutions
+Copyright (c) 2025 RepairSolutions
+
+## Support
+
+For issues or questions, please open an issue on GitHub:
+https://github.com/kaushikmahida/discourse-vehicle-plugin/issues
