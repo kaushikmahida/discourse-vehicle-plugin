@@ -1,0 +1,146 @@
+{{#if this.siteSettings.vehicle_fields_enabled}}
+  {{#if this.showVehicleFields}}
+    <div class="vehicle-fields-container">
+      <div class="vehicle-fields-header">
+        <h4 class="vehicle-fields-title">
+          <svg class="vehicle-icon" viewBox="0 0 24 24" width="18" height="18">
+            <path fill="currentColor" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+          </svg>
+          {{i18n "vehicle_fields.title"}}
+        </h4>
+        
+        <label class="general-question-toggle">
+          <input 
+            type="checkbox" 
+            checked={{this.isGeneralQuestion}}
+            {{on "change" this.toggleGeneralQuestion}}
+          />
+          <span>{{i18n "vehicle_fields.general_question"}}</span>
+        </label>
+      </div>
+
+      {{#unless this.isGeneralQuestion}}
+        <div class="vehicle-fields-grid">
+          {{! Step 1: Year }}
+          <div class="vehicle-field">
+            <label>
+              {{i18n "vehicle_fields.year"}}
+              <span class="step-number">1</span>
+              {{#if this.isLoadingYears}}
+                <span class="loading-indicator">...</span>
+              {{/if}}
+            </label>
+            <ComboBox
+              @value={{this.selectedYear}}
+              @content={{this.formattedYears}}
+              @onChange={{this.onYearChange}}
+              @options={{hash
+                none="vehicle_fields.year_placeholder"
+                filterable=true
+                valueProperty="id"
+                nameProperty="name"
+              }}
+            />
+          </div>
+
+          {{! Step 2: Make }}
+          <div class="vehicle-field {{unless this.canSelectMake 'disabled'}}">
+            <label>
+              {{i18n "vehicle_fields.make"}}
+              <span class="step-number">2</span>
+              {{#if this.isLoadingMakes}}
+                <span class="loading-indicator">...</span>
+              {{/if}}
+            </label>
+            <ComboBox
+              @value={{this.selectedMakeId}}
+              @content={{this.formattedMakes}}
+              @onChange={{this.onMakeChange}}
+              @disabled={{not this.canSelectMake}}
+              @options={{hash
+                none="vehicle_fields.make_placeholder"
+                filterable=true
+                valueProperty="id"
+                nameProperty="name"
+              }}
+            />
+          </div>
+
+          {{! Step 3: Model }}
+          <div class="vehicle-field {{unless this.canSelectModel 'disabled'}}">
+            <label>
+              {{i18n "vehicle_fields.model"}}
+              <span class="step-number">3</span>
+              {{#if this.isLoadingModels}}
+                <span class="loading-indicator">...</span>
+              {{/if}}
+            </label>
+            <ComboBox
+              @value={{this.selectedModelId}}
+              @content={{this.formattedModels}}
+              @onChange={{this.onModelChange}}
+              @disabled={{not this.canSelectModel}}
+              @options={{hash
+                none="vehicle_fields.model_placeholder"
+                filterable=true
+                valueProperty="id"
+                nameProperty="name"
+              }}
+            />
+          </div>
+
+          {{! Step 4: Trim }}
+          <div class="vehicle-field {{unless this.canSelectTrim 'disabled'}}">
+            <label>
+              {{i18n "vehicle_fields.trim"}}
+              <span class="step-number">4</span>
+              {{#if this.isLoadingTrims}}
+                <span class="loading-indicator">...</span>
+              {{/if}}
+            </label>
+            <ComboBox
+              @value={{this.selectedTrimId}}
+              @content={{this.formattedTrims}}
+              @onChange={{this.onTrimChange}}
+              @disabled={{not this.canSelectTrim}}
+              @options={{hash
+                none="vehicle_fields.trim_placeholder"
+                filterable=true
+                valueProperty="id"
+                nameProperty="name"
+              }}
+            />
+          </div>
+
+          {{! Step 5: Engine }}
+          <div class="vehicle-field {{unless this.canSelectEngine 'disabled'}}">
+            <label>
+              {{i18n "vehicle_fields.engine"}}
+              <span class="step-number">5</span>
+              <span class="optional-label">{{i18n "vehicle_fields.optional"}}</span>
+            </label>
+            <ComboBox
+              @value={{this.selectedEngine}}
+              @content={{this.formattedEngines}}
+              @onChange={{this.onEngineChange}}
+              @disabled={{not this.canSelectEngine}}
+              @options={{hash
+                none="vehicle_fields.engine_placeholder"
+                filterable=true
+                valueProperty="id"
+                nameProperty="name"
+              }}
+            />
+          </div>
+        </div>
+      {{else}}
+        <div class="general-question-notice">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+          {{i18n "vehicle_fields.general_question_notice"}}
+        </div>
+      {{/unless}}
+    </div>
+  {{/if}}
+{{/if}}

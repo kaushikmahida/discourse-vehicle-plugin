@@ -1,0 +1,8 @@
+en:
+  site_settings:
+    vehicle_fields_enabled: "Enable vehicle information fields for topics"
+    vehicle_fields_required_categories: "Categories where vehicle fields are required"
+    vehicle_fields_show_in_topic_list: "Show vehicle info in topic list"
+  vehicle_fields:
+    required_error: "Vehicle information (Year, Make, Model) is required for this category"
+

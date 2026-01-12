@@ -1,0 +1,21 @@
+# Ignore large data files
+data/vcdb.json
+data/vcdb_processed.json
+data/vcdb_processed_debug.json
+
+# Ignore OS files
+.DS_Store
+._*
+*.swp
+*.swo
+*~
+
+# Ignore logs
+*.log
+
+# Ignore node modules if any
+node_modules/
+
+# Ignore temporary files
+*.tmp
+*.bak

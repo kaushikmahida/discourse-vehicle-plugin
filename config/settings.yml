@@ -1,0 +1,20 @@
+plugins:
+  vehicle_fields_enabled:
+    default: true
+    client: true
+    description: "Enable vehicle information fields for topics"
+  
+  vehicle_fields_required_categories:
+    default: ""
+    type: list
+    list_type: category
+    description: "Categories where vehicle information is required (leave empty for optional everywhere)"
+  
+  vehicle_fields_auto_update_enabled:
+    default: true
+    description: "Enable automatic monthly updates of vehicle data from NHTSA"
+  
+  vehicle_fields_show_on_topic_list:
+    default: true
+    client: true
+    description: "Show vehicle badge on topic list items"

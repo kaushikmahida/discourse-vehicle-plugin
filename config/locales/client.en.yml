@@ -1,0 +1,43 @@
+en:
+  js:
+    # Override default Discourse composer messages
+    composer:
+      create_topic: "Ask a Question"
+      title_placeholder: "What's your question? Be specific."
+      composer_popup:
+        dont_dismiss: "Got it!"
+    topic:
+      create: "Ask Question"
+    education:
+      new-topic: |
+        <p>Welcome to the RepairSolutions Community!</p>
+        <p>Here are some tips for asking a great question:</p>
+        <ul>
+          <li>Select your vehicle information (Year, Make, Model, Trim) so others can help you better</li>
+          <li>Be specific about the problem or symptoms you're experiencing</li>
+          <li>Include any error codes or warning lights if applicable</li>
+          <li>Mention what you've already tried</li>
+        </ul>
+    vehicle_fields:
+      title: "Vehicle Information"
+      year: "Year"
+      make: "Make"
+      model: "Model"
+      trim: "Trim"
+      engine: "Engine"
+      year_placeholder: "Select year..."
+      make_placeholder: "Select make..."
+      model_placeholder: "Select or enter model..."
+      trim_placeholder: "Select or enter trim..."
+      engine_placeholder: "Select engine..."
+      required: "Year, Make, Model, and Trim are required for this category"
+      general_question: "This is a general question (not vehicle-specific)"
+      general_question_notice: "You've indicated this is a general question. Vehicle information is not required."
+      from_account: "Vehicle info loaded from your account"
+      optional: "(optional)"
+      validation:
+        year_required: "Please select a vehicle year"
+        make_required: "Please select a vehicle make"
+        model_required: "Please select or enter a vehicle model"
+        trim_required: "Please select or enter a vehicle trim"
+        engine_required: "Please select an engine"
