@@ -12,15 +12,22 @@ enabled_site_setting :vehicle_fields_enabled
 PLUGIN_NAME = "discourse-vehicle-plugin"
 
 after_initialize do
-  # Custom fields for topics
-  %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine].each do |field|
-    Topic.register_custom_field_type(field, :string)
-    PostRevisor.track_topic_field(field.to_sym)
-    add_preloaded_topic_list_custom_field(field)
+  begin
+    # Custom fields for topics
+    %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine].each do |field|
+      Topic.register_custom_field_type(field, :string)
+      PostRevisor.track_topic_field(field.to_sym)
+      add_preloaded_topic_list_custom_field(field)
+    rescue => e
+      Rails.logger.error("[VehiclePlugin] Error registering field #{field}: #{e.message}")
+    end
+    Topic.register_custom_field_type("is_general_question", :boolean)
+    PostRevisor.track_topic_field(:is_general_question)
+    add_preloaded_topic_list_custom_field("is_general_question")
+  rescue => e
+    Rails.logger.error("[VehiclePlugin] Error in after_initialize: #{e.message}")
+    Rails.logger.error("[VehiclePlugin] Backtrace: #{e.backtrace.first(5).join(', ')}")
   end
-  Topic.register_custom_field_type("is_general_question", :boolean)
-  PostRevisor.track_topic_field(:is_general_question)
-  add_preloaded_topic_list_custom_field("is_general_question")
 
   # Serializers
   %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine is_general_question].each do |field|
@@ -214,11 +221,15 @@ after_initialize do
   end
 
   on(:topic_created) do |topic, opts, user|
-    topic.custom_fields["is_general_question"] = opts[:is_general_question] == true
-    %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine].each do |field|
-      topic.custom_fields[field] = opts[field.to_sym] if opts[field.to_sym].present?
+    begin
+      topic.custom_fields["is_general_question"] = opts[:is_general_question] == true
+      %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine].each do |field|
+        topic.custom_fields[field] = opts[field.to_sym] if opts[field.to_sym].present?
+      end
+      topic.save_custom_fields
+    rescue => e
+      Rails.logger.error("[VehiclePlugin] Error in topic_created hook: #{e.message}")
     end
-    topic.save_custom_fields
   end
 end
 
