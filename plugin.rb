@@ -40,33 +40,37 @@ after_initialize do
     def self.vcdb_data
       return @@vcdb_data if @@vcdb_data
       
-      # Try multiple possible paths (production and dev)
-      possible_paths = [
-        File.join(Rails.root, "plugins", PLUGIN_NAME, "data", "vcdb.json"),
-        File.join(Rails.root, "plugins", PLUGIN_NAME, "data", "vcdb_processed.json"),
-        "/shared/plugins/#{PLUGIN_NAME}/data/vcdb.json",
-        "/var/discourse/shared/standalone/plugins/#{PLUGIN_NAME}/data/vcdb.json",
-        "/src/plugins/#{PLUGIN_NAME}/data/vcdb.json",
-        "/src/plugins/#{PLUGIN_NAME}/data/vcdb_processed.json"
-      ]
-      
-      filepath = possible_paths.find { |p| File.exist?(p) }
-      
-      if filepath
-        Rails.logger.info("[VehiclePlugin] Loading VCDB from #{filepath}")
-        begin
-          @@vcdb_data = JSON.parse(File.read(filepath))
-          Rails.logger.info("[VehiclePlugin] VCDB loaded: #{@@vcdb_data['years']&.length} years, #{@@vcdb_data['makes']&.length} makes")
-        rescue => e
-          Rails.logger.error("[VehiclePlugin] Failed to parse VCDB: #{e.message}")
-          Rails.logger.error("[VehiclePlugin] Backtrace: #{e.backtrace.first(5).join(', ')}")
+      begin
+        # Try multiple possible paths (production and dev)
+        possible_paths = [
+          File.join(Rails.root, "plugins", PLUGIN_NAME, "data", "vcdb.json"),
+          File.join(Rails.root, "plugins", PLUGIN_NAME, "data", "vcdb_processed.json"),
+          "/shared/plugins/#{PLUGIN_NAME}/data/vcdb.json",
+          "/var/discourse/shared/standalone/plugins/#{PLUGIN_NAME}/data/vcdb.json",
+          "/src/plugins/#{PLUGIN_NAME}/data/vcdb.json",
+          "/src/plugins/#{PLUGIN_NAME}/data/vcdb_processed.json"
+        ]
+        
+        filepath = possible_paths.find { |p| File.exist?(p) rescue false }
+        
+        if filepath
+          Rails.logger.info("[VehiclePlugin] Loading VCDB from #{filepath}")
+          begin
+            @@vcdb_data = JSON.parse(File.read(filepath))
+            Rails.logger.info("[VehiclePlugin] VCDB loaded: #{@@vcdb_data['years']&.length} years, #{@@vcdb_data['makes']&.length} makes")
+          rescue => e
+            Rails.logger.error("[VehiclePlugin] Failed to parse VCDB: #{e.message}")
+            @@vcdb_data = empty_vcdb
+          end
+        else
+          Rails.logger.warn("[VehiclePlugin] VCDB file not found. Plugin will work with empty VCDB data")
           @@vcdb_data = empty_vcdb
         end
-      else
-        Rails.logger.warn("[VehiclePlugin] VCDB file not found. Tried: #{possible_paths.join(', ')}")
-        Rails.logger.warn("[VehiclePlugin] Plugin will work with empty VCDB data")
+      rescue => e
+        Rails.logger.error("[VehiclePlugin] Error in vcdb_data: #{e.message}")
         @@vcdb_data = empty_vcdb
       end
+      
       @@vcdb_data
     end
     
