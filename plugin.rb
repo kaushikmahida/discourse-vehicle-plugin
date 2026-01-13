@@ -60,7 +60,7 @@ after_initialize do
 
       def years
         begin
-          data = get_vcdb_data
+          data = DiscourseVehiclePlugin.get_vcdb_data
           years = data["years"] || []
           render json: { years: years }
         rescue => e
@@ -74,7 +74,7 @@ after_initialize do
           year = params[:year].to_s
           return render json: { makes: [] } if year.blank?
           
-          data = get_vcdb_data
+          data = DiscourseVehiclePlugin.get_vcdb_data
           make_ids = data.dig("year_makes", year) || []
           makes_map = data["makes"] || {}
           
@@ -96,7 +96,7 @@ after_initialize do
           make_id = params[:make_id].to_s
           return render json: { models: [] } if year.blank? || make_id.blank?
           
-          data = get_vcdb_data
+          data = DiscourseVehiclePlugin.get_vcdb_data
           key = "#{year}_#{make_id}"
           model_ids = data.dig("year_make_models", key) || []
           models_map = data["models"] || {}
@@ -120,7 +120,7 @@ after_initialize do
           model_id = params[:model_id].to_s
           return render json: { trims: [] } if year.blank? || make_id.blank? || model_id.blank?
           
-          data = get_vcdb_data
+          data = DiscourseVehiclePlugin.get_vcdb_data
           key = "#{year}_#{make_id}_#{model_id}"
           trim_ids = data.dig("ymm_submodels", key) || []
           trims_map = data["submodels"] || {}
