@@ -2,6 +2,8 @@
 
 class CreateVehicleDataTables < ActiveRecord::Migration[7.0]
   def up
+    return if table_exists?(:vehicle_years) # Already migrated
+    
     create_table :vehicle_makes do |t|
       t.string :make_id, null: false, index: { unique: true }
       t.string :name, null: false
