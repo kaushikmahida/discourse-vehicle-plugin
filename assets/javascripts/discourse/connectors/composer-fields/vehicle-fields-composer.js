@@ -174,7 +174,9 @@ export default class VehicleFieldsComposer extends Component {
 
   @action
   async onYearChange(value) {
-    this.selectedYear = value;
+    // Extract ID if value is an object
+    const yearId = typeof value === 'object' ? (value?.id || value?.name) : value;
+    this.selectedYear = yearId;
     
     // Reset dependent fields
     this.selectedMakeId = null;
@@ -189,24 +191,26 @@ export default class VehicleFieldsComposer extends Component {
     this.availableTrims = [];
     
     if (this.model) {
-      this.model.vehicle_year = value;
+      this.model.vehicle_year = yearId;
       this.model.vehicle_make = null;
       this.model.vehicle_model = null;
       this.model.vehicle_trim = null;
       this.model.vehicle_engine = null;
     }
 
-    if (value) {
-      await this.loadMakes(value);
+    if (yearId) {
+      await this.loadMakes(yearId);
     }
   }
 
   @action
   async onMakeChange(value) {
-    this.selectedMakeId = value;
+    // Extract ID if value is an object
+    const makeId = typeof value === 'object' ? (value?.id || value?.name) : value;
+    this.selectedMakeId = makeId;
     
     // Find make name
-    const make = this.availableMakes.find(m => m.id.toString() === value);
+    const make = this.availableMakes.find(m => m.id.toString() === makeId);
     this.selectedMakeName = make?.name || null;
     
     // Reset dependent fields
@@ -225,17 +229,19 @@ export default class VehicleFieldsComposer extends Component {
       this.model.vehicle_engine = null;
     }
 
-    if (value && this.selectedYear) {
-      await this.loadModels(this.selectedYear, value);
+    if (makeId && this.selectedYear) {
+      await this.loadModels(this.selectedYear, makeId);
     }
   }
 
   @action
   async onModelChange(value) {
-    this.selectedModelId = value;
+    // Extract ID if value is an object
+    const modelId = typeof value === 'object' ? (value?.id || value?.name) : value;
+    this.selectedModelId = modelId;
     
     // Find model name
-    const model = this.availableModels.find(m => m.id.toString() === value);
+    const model = this.availableModels.find(m => m.id.toString() === modelId);
     this.selectedModelName = model?.name || null;
     
     // Reset dependent fields
@@ -250,17 +256,19 @@ export default class VehicleFieldsComposer extends Component {
       this.model.vehicle_engine = null;
     }
 
-    if (value && this.selectedYear && this.selectedMakeId) {
-      await this.loadTrims(this.selectedYear, this.selectedMakeId, value);
+    if (modelId && this.selectedYear && this.selectedMakeId) {
+      await this.loadTrims(this.selectedYear, this.selectedMakeId, modelId);
     }
   }
 
   @action
   onTrimChange(value) {
-    this.selectedTrimId = value;
+    // Extract ID if value is an object
+    const trimId = typeof value === 'object' ? (value?.id || value?.name) : value;
+    this.selectedTrimId = trimId;
     
     // Find trim name
-    const trim = this.availableTrims.find(t => t.id.toString() === value);
+    const trim = this.availableTrims.find(t => t.id.toString() === trimId);
     this.selectedTrimName = trim?.name || null;
     
     if (this.model) {
@@ -270,10 +278,12 @@ export default class VehicleFieldsComposer extends Component {
 
   @action
   onEngineChange(value) {
-    this.selectedEngine = value;
+    // Extract value if it's an object
+    const engineValue = typeof value === 'object' ? (value?.id || value?.name) : value;
+    this.selectedEngine = engineValue;
     
     if (this.model) {
-      this.model.vehicle_engine = value;
+      this.model.vehicle_engine = engineValue;
     }
   }
 }
