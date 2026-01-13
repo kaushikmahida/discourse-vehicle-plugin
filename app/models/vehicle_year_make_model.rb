@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+class VehicleYearMakeModel < ActiveRecord::Base
+  self.table_name = 'vehicle_year_make_models'
+  
+  belongs_to :make, class_name: 'VehicleMake', foreign_key: 'make_id', primary_key: 'make_id'
+  belongs_to :model, class_name: 'VehicleModel', foreign_key: 'model_id', primary_key: 'model_id'
+  
+  validates :year, presence: true
+  validates :make_id, presence: true
+  validates :model_id, presence: true
+end
