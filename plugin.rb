@@ -64,7 +64,8 @@ after_initialize do
             return render json: { years: [], error: "Database not ready. Run migration and import data." }
           end
           
-          years = VehicleYear.order(year: :desc).pluck(:year)
+          db = ActiveRecord::Base.connection
+          years = db.execute("SELECT year FROM vehicle_years ORDER BY year DESC").map { |r| r['year'] }
           render json: { years: years }
         rescue => e
           Rails.logger.error("[VehiclePlugin] Error in years endpoint: #{e.message}")
@@ -81,10 +82,12 @@ after_initialize do
             return render json: { makes: [], error: "Database not ready. Run migration and import data." }
           end
           
-          make_ids = VehicleYearMake.where(year: year.to_i).pluck(:make_id)
-          makes = VehicleMake.where(make_id: make_ids)
-            .order(:name)
-            .map { |m| { id: m.make_id, name: m.name } }
+          db = ActiveRecord::Base.connection
+          make_ids = db.execute("SELECT make_id FROM vehicle_year_makes WHERE year = #{year.to_i}").map { |r| r['make_id'] }
+          return render json: { makes: [] } if make_ids.empty?
+          
+          makes = db.execute("SELECT make_id, name FROM vehicle_makes WHERE make_id IN ('#{make_ids.join("','")}') ORDER BY name")
+            .map { |r| { id: r['make_id'], name: r['name'] } }
           
           render json: { makes: makes }
         rescue => e
@@ -104,10 +107,12 @@ after_initialize do
             return render json: { models: [], error: "Database not ready. Run migration and import data." }
           end
           
-          model_ids = VehicleYearMakeModel.where(year: year.to_i, make_id: make_id.to_s).pluck(:model_id)
-          models = VehicleModel.where(model_id: model_ids)
-            .order(:name)
-            .map { |m| { id: m.model_id, name: m.name } }
+          db = ActiveRecord::Base.connection
+          model_ids = db.execute("SELECT model_id FROM vehicle_year_make_models WHERE year = #{year.to_i} AND make_id = '#{make_id.to_s.gsub("'", "''")}'").map { |r| r['model_id'] }
+          return render json: { models: [] } if model_ids.empty?
+          
+          models = db.execute("SELECT model_id, name FROM vehicle_models WHERE model_id IN ('#{model_ids.join("','")}') ORDER BY name")
+            .map { |r| { id: r['model_id'], name: r['name'] } }
           
           render json: { models: models }
         rescue => e
@@ -127,15 +132,12 @@ after_initialize do
             return render json: { trims: [], error: "Database not ready. Run migration and import data." }
           end
           
-          submodel_ids = VehicleYmmSubmodel.where(
-            year: year.to_i,
-            make_id: make_id.to_s,
-            model_id: model_id.to_s
-          ).pluck(:submodel_id)
+          db = ActiveRecord::Base.connection
+          submodel_ids = db.execute("SELECT submodel_id FROM vehicle_ymm_submodels WHERE year = #{year.to_i} AND make_id = '#{make_id.to_s.gsub("'", "''")}' AND model_id = '#{model_id.to_s.gsub("'", "''")}'").map { |r| r['submodel_id'] }
+          return render json: { trims: [] } if submodel_ids.empty?
           
-          trims = VehicleSubmodel.where(submodel_id: submodel_ids)
-            .order(:name)
-            .map { |s| { id: s.submodel_id, name: s.name } }
+          trims = db.execute("SELECT submodel_id, name FROM vehicle_submodels WHERE submodel_id IN ('#{submodel_ids.join("','")}') ORDER BY name")
+            .map { |r| { id: r['submodel_id'], name: r['name'] } }
           
           render json: { trims: trims }
         rescue => e
@@ -150,14 +152,28 @@ after_initialize do
       end
 
       def test
-        render json: { 
-          database_ready: DiscourseVehiclePlugin.database_ready?,
-          years_count: VehicleYear.count,
-          makes_count: VehicleMake.count,
-          models_count: VehicleModel.count,
-          submodels_count: VehicleSubmodel.count,
-          sample_years: VehicleYear.order(year: :desc).limit(5).pluck(:year)
-        }
+        begin
+          db = ActiveRecord::Base.connection
+          years_count = db.execute("SELECT COUNT(*) FROM vehicle_years").first['count'].to_i
+          makes_count = db.execute("SELECT COUNT(*) FROM vehicle_makes").first['count'].to_i
+          models_count = db.execute("SELECT COUNT(*) FROM vehicle_models").first['count'].to_i
+          submodels_count = db.execute("SELECT COUNT(*) FROM vehicle_submodels").first['count'].to_i
+          sample_years = db.execute("SELECT year FROM vehicle_years ORDER BY year DESC LIMIT 5").map { |r| r['year'] }
+          
+          render json: { 
+            database_ready: DiscourseVehiclePlugin.database_ready?,
+            years_count: years_count,
+            makes_count: makes_count,
+            models_count: models_count,
+            submodels_count: submodels_count,
+            sample_years: sample_years
+          }
+        rescue => e
+          render json: { 
+            database_ready: false,
+            error: e.message
+          }
+        end
       end
     end
 
