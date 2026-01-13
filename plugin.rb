@@ -29,16 +29,36 @@ after_initialize do
     Rails.logger.error("[VehiclePlugin] Backtrace: #{e.backtrace.first(5).join(', ')}")
   end
 
-  # Serializers
+  # Serializers - wrapped in error handling to prevent crashes
   %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine is_general_question].each do |field|
-    add_to_serializer(:topic_view, field.to_sym) { object.topic.custom_fields[field] }
-    add_to_serializer(:topic_list_item, field.to_sym) { object.custom_fields[field] }
+    begin
+      add_to_serializer(:topic_view, field.to_sym) do
+        begin
+          object.topic.custom_fields[field] rescue nil
+        end
+      end
+      add_to_serializer(:topic_list_item, field.to_sym) do
+        begin
+          object.custom_fields[field] rescue nil
+        end
+      end
+    rescue => e
+      Rails.logger.error("[VehiclePlugin] Error adding serializer for #{field}: #{e.message}")
+    end
   end
 
-  # User fields for SSO
+  # User fields for SSO - wrapped in error handling
   %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine vehicle_vin].each do |field|
-    User.register_custom_field_type(field, :string)
-    add_to_serializer(:current_user, field.to_sym) { object.custom_fields[field] }
+    begin
+      User.register_custom_field_type(field, :string)
+      add_to_serializer(:current_user, field.to_sym) do
+        begin
+          object.custom_fields[field] rescue nil
+        end
+      end
+    rescue => e
+      Rails.logger.error("[VehiclePlugin] Error registering user field #{field}: #{e.message}")
+    end
   end
 
   module ::DiscourseVehiclePlugin
@@ -61,15 +81,16 @@ after_initialize do
       def years
         begin
           unless DiscourseVehiclePlugin.database_ready?
-            return render json: { years: [], error: "Database not ready. Run migration and import data." }
+            return render json: { years: [] }
           end
           
           db = ActiveRecord::Base.connection
           years = db.execute("SELECT year FROM vehicle_years ORDER BY year DESC").map { |r| r['year'] }
-          render json: { years: years }
+          render json: { years: years || [] }
         rescue => e
           Rails.logger.error("[VehiclePlugin] Error in years endpoint: #{e.message}")
-          render json: { years: [], error: "Internal error" }, status: 500
+          Rails.logger.error("[VehiclePlugin] Backtrace: #{e.backtrace.first(3).join(', ')}")
+          render json: { years: [] }
         end
       end
 
@@ -193,6 +214,7 @@ after_initialize do
 
   on(:topic_created) do |topic, opts, user|
     begin
+      return unless topic && opts # Safety check
       topic.custom_fields["is_general_question"] = opts[:is_general_question] == true
       %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine].each do |field|
         topic.custom_fields[field] = opts[field.to_sym] if opts[field.to_sym].present?
@@ -200,6 +222,8 @@ after_initialize do
       topic.save_custom_fields
     rescue => e
       Rails.logger.error("[VehiclePlugin] Error in topic_created hook: #{e.message}")
+      Rails.logger.error("[VehiclePlugin] Backtrace: #{e.backtrace.first(3).join(', ')}")
+      # Don't re-raise - just log the error
     end
   end
 end

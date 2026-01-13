@@ -35,17 +35,31 @@ export default class VehicleFieldsComposer extends Component {
 
   constructor() {
     super(...arguments);
-    this.loadYears();
-    this.loadEngines();
+    try {
+      this.loadYears();
+      this.loadEngines();
+    } catch (error) {
+      console.error("[VehiclePlugin] Error in constructor:", error);
+    }
   }
 
   get model() {
-    return this.args.outletArgs?.model;
+    try {
+      return this.args?.outletArgs?.model;
+    } catch (error) {
+      console.error("[VehiclePlugin] Error getting model:", error);
+      return null;
+    }
   }
 
   get showVehicleFields() {
-    if (!this.model) return false;
-    return this.model.action === "createTopic";
+    try {
+      if (!this.model) return false;
+      return this.model.action === "createTopic";
+    } catch (error) {
+      console.error("[VehiclePlugin] Error checking showVehicleFields:", error);
+      return false;
+    }
   }
 
   get hasVehicleFromSSO() {
