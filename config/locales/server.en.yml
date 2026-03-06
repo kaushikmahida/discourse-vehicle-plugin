@@ -2,7 +2,9 @@ en:
   site_settings:
     vehicle_fields_enabled: "Enable vehicle information fields for topics"
     vehicle_fields_required_categories: "Categories where vehicle fields are required"
-    vehicle_fields_show_in_topic_list: "Show vehicle info in topic list"
+    vehicle_fields_show_on_topic_list: "Show vehicle info in topic list"
+    vehicle_fields_auto_update_enabled: "Enable automatic monthly updates of vehicle data"
+    vehicle_fields_dtc_enabled: "Enable DTC (Diagnostic Trouble Code) display and attachment to topics"
+    vehicle_fields_sso_prepopulate: "Pre-populate vehicle fields from SSO user data when creating a topic"
   vehicle_fields:
     required_error: "Vehicle information (Year, Make, Model) is required for this category"
-

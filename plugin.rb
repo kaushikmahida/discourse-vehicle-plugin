@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # name: discourse-vehicle-plugin
-# about: Vehicle fields for topics - MINIMAL VERSION
-# version: 6.0.0
+# about: Vehicle fields and DTC code support for topics with SSO integration
+# version: 7.0.0
 # authors: RepairSolutions
 # url: https://github.com/kaushikmahida/discourse-vehicle-plugin
 # required_version: 2.7.0
@@ -12,40 +12,62 @@ enabled_site_setting :vehicle_fields_enabled
 PLUGIN_NAME = "discourse-vehicle-plugin"
 
 after_initialize do
-  # Only register custom fields - nothing else
   begin
-    %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine].each do |field|
+    # ── Topic custom fields ──
+    %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine dtc_codes].each do |field|
       Topic.register_custom_field_type(field, :string)
       PostRevisor.track_topic_field(field.to_sym)
     end
     Topic.register_custom_field_type("is_general_question", :boolean)
     PostRevisor.track_topic_field(:is_general_question)
+
+    # ── Topic serializers (topic view + topic list) ──
+    %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine dtc_codes is_general_question].each do |field|
+      add_to_serializer(:topic_view, field.to_sym) do
+        object.topic.custom_fields[field] rescue nil
+      end
+      add_to_serializer(:topic_list_item, field.to_sym) do
+        object.custom_fields[field] rescue nil
+      end
+    end
+
+    # ── User custom fields from SSO ──
+    %w[vehicle_year vehicle_make vehicle_model].each do |field|
+      User.register_custom_field_type(field, :string)
+      add_to_serializer(:current_user, field.to_sym) do
+        object.custom_fields[field] rescue nil
+      end
+    end
+    User.register_custom_field_type("report_codes_json", :string)
+    add_to_serializer(:current_user, :report_codes_json) do
+      object.custom_fields["report_codes_json"] rescue nil
+    end
   rescue => e
     Rails.logger.error("[VehiclePlugin] Error in after_initialize: #{e.message}")
   end
 
   module ::DiscourseVehiclePlugin
     @@vcdb_cache = nil
-    
+
     def self.get_vcdb_data
       return @@vcdb_cache if @@vcdb_cache
-      
+
       begin
         possible_paths = [
           File.join(Rails.root, "plugins", PLUGIN_NAME, "data", "vcdb.json"),
           "/shared/plugins/#{PLUGIN_NAME}/data/vcdb.json",
           "/var/discourse/shared/standalone/plugins/#{PLUGIN_NAME}/data/vcdb.json"
         ]
-        
+
         filepath = possible_paths.find { |p| File.exist?(p) rescue false }
         return {} unless filepath
-        
+
         @@vcdb_cache = JSON.parse(File.read(filepath))
       rescue => e
         Rails.logger.error("[VehiclePlugin] Error loading VCDB: #{e.message}")
         @@vcdb_cache = {}
       end
-      
+
       @@vcdb_cache
     end
 
@@ -73,16 +95,16 @@ after_initialize do
         begin
           year = params[:year].to_s
           return render json: { makes: [] } if year.blank?
-          
+
           data = DiscourseVehiclePlugin.get_vcdb_data
           make_ids = data.dig("year_makes", year) || []
           makes_map = data["makes"] || {}
-          
+
           makes = make_ids.map { |id|
             name = makes_map[id.to_s] || makes_map[id.to_i.to_s]
             { id: id.to_s, name: name } if name
           }.compact.sort_by { |m| m[:name] }
-          
+
           render json: { makes: makes }
         rescue => e
           Rails.logger.error("[VehiclePlugin] Error in makes: #{e.message}")
@@ -95,17 +117,17 @@ after_initialize do
           year = params[:year].to_s
           make_id = params[:make_id].to_s
           return render json: { models: [] } if year.blank? || make_id.blank?
-          
+
           data = DiscourseVehiclePlugin.get_vcdb_data
           key = "#{year}_#{make_id}"
           model_ids = data.dig("year_make_models", key) || []
           models_map = data["models"] || {}
-          
+
           models = model_ids.map { |id|
             name = models_map[id.to_s] || models_map[id.to_i.to_s]
             { id: id.to_s, name: name } if name
           }.compact.sort_by { |m| m[:name] }
-          
+
           render json: { models: models }
         rescue => e
           Rails.logger.error("[VehiclePlugin] Error in models: #{e.message}")
@@ -119,17 +141,17 @@ after_initialize do
           make_id = params[:make_id].to_s
           model_id = params[:model_id].to_s
           return render json: { trims: [] } if year.blank? || make_id.blank? || model_id.blank?
-          
+
           data = DiscourseVehiclePlugin.get_vcdb_data
           key = "#{year}_#{make_id}_#{model_id}"
           trim_ids = data.dig("ymm_submodels", key) || []
           trims_map = data["submodels"] || {}
-          
+
           trims = trim_ids.map { |id|
             name = trims_map[id.to_s] || trims_map[id.to_i.to_s]
             { id: id.to_s, name: name } if name
           }.compact.sort_by { |t| t[:name] }
-          
+
           render json: { trims: trims }
         rescue => e
           Rails.logger.error("[VehiclePlugin] Error in trims: #{e.message}")
@@ -138,7 +160,7 @@ after_initialize do
       end
 
       def engines
-        render json: { engines: ["1.5L I4", "2.0L I4", "2.0L Turbo", "2.5L I4", "3.0L V6", "3.5L V6", 
+        render json: { engines: ["1.5L I4", "2.0L I4", "2.0L Turbo", "2.5L I4", "3.0L V6", "3.5L V6",
                                   "5.0L V8", "5.7L V8", "6.2L V8", "Hybrid", "Electric", "Other"] }
       end
     end
@@ -160,7 +182,7 @@ after_initialize do
     begin
       return unless topic && opts
       topic.custom_fields["is_general_question"] = opts[:is_general_question] == true
-      %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine].each do |field|
+      %w[vehicle_year vehicle_make vehicle_model vehicle_trim vehicle_engine dtc_codes].each do |field|
         topic.custom_fields[field] = opts[field.to_sym] if opts[field.to_sym].present?
       end
       topic.save_custom_fields

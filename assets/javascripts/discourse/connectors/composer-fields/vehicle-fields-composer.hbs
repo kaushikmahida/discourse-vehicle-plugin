@@ -8,10 +8,10 @@
           </svg>
           {{i18n "vehicle_fields.title"}}
         </h4>
-        
+
         <label class="general-question-toggle">
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             checked={{this.isGeneralQuestion}}
             {{on "change" this.toggleGeneralQuestion}}
           />
@@ -20,6 +20,16 @@
       </div>
 
       {{#unless this.isGeneralQuestion}}
+        {{! SSO notice }}
+        {{#if this.ssoVehicleLoaded}}
+          <div class="vehicle-sso-notice">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span>{{i18n "vehicle_fields.from_account"}} {{i18n "vehicle_fields.from_account_editable"}}</span>
+          </div>
+        {{/if}}
+
         <div class="vehicle-fields-grid">
           {{! Step 1: Year }}
           <div class="vehicle-field">
@@ -133,6 +143,92 @@
             />
           </div>
         </div>
+
+        {{! DTC Codes Section }}
+        {{#if this.showDtcSection}}
+          <div class="dtc-codes-section">
+            <h4 class="dtc-section-title">
+              <svg class="dtc-icon" viewBox="0 0 24 24" width="18" height="18">
+                <path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+              </svg>
+              {{i18n "vehicle_fields.dtc_title"}}
+              <span class="optional-label">{{i18n "vehicle_fields.optional"}}</span>
+            </h4>
+
+            <p class="dtc-description">{{i18n "vehicle_fields.dtc_description"}}</p>
+
+            {{! SSO DTC codes from user's latest scan }}
+            {{#if this.hasSsoDtcCodes}}
+              <div class="dtc-from-scan">
+                <span class="dtc-scan-label">{{i18n "vehicle_fields.dtc_from_scan"}}:</span>
+                <div class="dtc-code-chips">
+                  {{#each this.userDtcCodes as |dtc|}}
+                    <button
+                      type="button"
+                      class="dtc-chip {{if (this.isDtcSelected dtc) 'selected'}}"
+                      title="{{dtc.description}}"
+                      {{on "click" (fn this.toggleDtcCode dtc)}}
+                    >
+                      <span class="dtc-chip-code">{{dtc.code}}</span>
+                      <span class="dtc-chip-type">{{dtc.type}}</span>
+                    </button>
+                  {{/each}}
+                </div>
+              </div>
+            {{/if}}
+
+            {{! Manual DTC code entry }}
+            <div class="dtc-manual-entry">
+              <label>{{i18n "vehicle_fields.dtc_manual_add"}}</label>
+              <div class="dtc-manual-input-row">
+                <input
+                  type="text"
+                  class="dtc-manual-input"
+                  placeholder={{i18n "vehicle_fields.dtc_manual_placeholder"}}
+                  value={{this.manualDtcInput}}
+                  maxlength="5"
+                  {{on "input" this.updateManualDtcInput}}
+                  {{on "keydown" this.onDtcInputKeydown}}
+                />
+                <button
+                  type="button"
+                  class="btn btn-primary dtc-add-btn"
+                  {{on "click" this.addManualDtcCode}}
+                >
+                  {{i18n "vehicle_fields.dtc_add_button"}}
+                </button>
+              </div>
+              {{#if this.dtcInputError}}
+                <span class="dtc-input-error">{{i18n this.dtcInputError}}</span>
+              {{/if}}
+            </div>
+
+            {{! Selected DTC codes summary }}
+            {{#if this.selectedDtcCodes.length}}
+              <div class="dtc-selected-list">
+                <span class="dtc-selected-label">{{i18n "vehicle_fields.dtc_selected"}}:</span>
+                <div class="dtc-selected-chips">
+                  {{#each this.selectedDtcCodes as |dtc|}}
+                    <span class="dtc-selected-chip">
+                      <strong>{{dtc.code}}</strong>
+                      {{#if dtc.description}}
+                        <span class="dtc-desc-truncated" title="{{dtc.description}}">
+                          - {{dtc.description}}
+                        </span>
+                      {{/if}}
+                      <button
+                        type="button"
+                        class="dtc-remove-btn"
+                        title={{i18n "vehicle_fields.dtc_remove"}}
+                        {{on "click" (fn this.removeDtcCode dtc)}}
+                      >&times;</button>
+                    </span>
+                  {{/each}}
+                </div>
+              </div>
+            {{/if}}
+          </div>
+        {{/if}}
       {{else}}
         <div class="general-question-notice">
           <svg viewBox="0 0 24 24" width="16" height="16">

@@ -6,6 +6,17 @@
       </svg>
       <span>{{this.vehicleInfo}}</span>
     </div>
+
+    {{#if this.hasDtcCodes}}
+      <div class="dtc-info-badge">
+        <svg class="dtc-icon" viewBox="0 0 24 24" width="14" height="14">
+          <path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+        </svg>
+        <span class="dtc-badge-label">{{i18n "vehicle_fields.dtc_badge_label"}}:</span>
+        {{#each this.dtcCodes as |dtc|}}
+          <span class="dtc-badge-code" title="{{dtc.description}}">{{dtc.code}}</span>
+        {{/each}}
+      </div>
+    {{/if}}
   </div>
 {{/if}}
-
