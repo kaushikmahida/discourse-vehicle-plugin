@@ -31,16 +31,44 @@ after_initialize do
       end
     end
 
-    # ── User custom fields from SSO ──
+    # ── User custom fields from SSO (account vehicle) ──
     %w[vehicle_year vehicle_make vehicle_model].each do |field|
       User.register_custom_field_type(field, :string)
       add_to_serializer(:current_user, field.to_sym) do
         object.custom_fields[field] rescue nil
       end
     end
-    User.register_custom_field_type("report_codes_json", :string)
-    add_to_serializer(:current_user, :report_codes_json) do
-      object.custom_fields["report_codes_json"] rescue nil
+
+    # ── Report data from SSO (via Discourse User Fields) ──
+    # SSO maps custom.user_field_N to admin-defined User Fields.
+    # We look up fields by name for portability across instances.
+    report_field_id = UserField.find_by(name: "report")&.id
+    veh_year_field_id = UserField.find_by(name: "vehicle_year")&.id
+    veh_make_field_id = UserField.find_by(name: "vehicle_make")&.id
+    veh_model_field_id = UserField.find_by(name: "vehicle_model")&.id
+
+    if report_field_id
+      add_to_serializer(:current_user, :report_data) do
+        object.user_fields&.dig(report_field_id.to_s) rescue nil
+      end
+    end
+
+    if veh_year_field_id
+      add_to_serializer(:current_user, :report_vehicle_year) do
+        object.user_fields&.dig(veh_year_field_id.to_s) rescue nil
+      end
+    end
+
+    if veh_make_field_id
+      add_to_serializer(:current_user, :report_vehicle_make) do
+        object.user_fields&.dig(veh_make_field_id.to_s) rescue nil
+      end
+    end
+
+    if veh_model_field_id
+      add_to_serializer(:current_user, :report_vehicle_model) do
+        object.user_fields&.dig(veh_model_field_id.to_s) rescue nil
+      end
     end
   rescue => e
     Rails.logger.error("[VehiclePlugin] Error in after_initialize: #{e.message}")

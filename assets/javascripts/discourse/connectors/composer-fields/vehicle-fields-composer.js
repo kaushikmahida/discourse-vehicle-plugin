@@ -144,9 +144,8 @@ export default class VehicleFieldsComposer extends Component {
   _parseSsoDtcCodes() {
     if (!this.currentUser) return;
 
-    const jsonStr =
-      this.currentUser.report_codes_json ||
-      this.currentUser.custom_fields?.report_codes_json;
+    // report_data comes from the "report" UserField (SSO-synced via custom.user_field_N)
+    const jsonStr = this.currentUser.report_data;
     if (!jsonStr) return;
 
     try {
@@ -161,7 +160,7 @@ export default class VehicleFieldsComposer extends Component {
         }));
       }
     } catch (e) {
-      console.error("[VehiclePlugin] Error parsing report_codes_json:", e);
+      console.error("[VehiclePlugin] Error parsing report_data:", e);
       this.userDtcCodes = [];
     }
   }
@@ -171,10 +170,10 @@ export default class VehicleFieldsComposer extends Component {
     if (!this.currentUser) return;
 
     const user = this.currentUser;
-    const cf = user.custom_fields || {};
-    const ssoYear = user.vehicle_year || cf.vehicle_year;
-    const ssoMake = user.vehicle_make || cf.vehicle_make;
-    const ssoModel = user.vehicle_model || cf.vehicle_model;
+    // Prefer report vehicle (from latest scan) over account vehicle
+    const ssoYear = user.report_vehicle_year || user.vehicle_year;
+    const ssoMake = user.report_vehicle_make || user.vehicle_make;
+    const ssoModel = user.report_vehicle_model || user.vehicle_model;
 
     if (!ssoYear) return;
 
